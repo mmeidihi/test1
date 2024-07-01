@@ -1,40 +1,76 @@
-import altair as alt
-import numpy as np
-import pandas as pd
 import streamlit as st
+import pandas as pd
+import seaborn as sns
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
 
-"""
-# Welcome to Streamlit!
+# Load dataset
+iris = load_iris()
+X = iris.data
+y = iris.target
+df = pd.DataFrame(X, columns=iris.feature_names)
+df['target'] = y
 
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:.
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
+# Sidebar for user input
+st.sidebar.header('User Input Parameters')
 
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+def user_input_features():
+    sepal_length = st.sidebar.slider('Sepal length', float(df.sepal_length.min()), float(df.sepal_length.max()))
+    sepal_width = st.sidebar.slider('Sepal width', float(df.sepal_width.min()), float(df.sepal_width.max()))
+    petal_length = st.sidebar.slider('Petal length', float(df.petal_length.min()), float(df.petal_length.max()))
+    petal_width = st.sidebar.slider('Petal width', float(df.petal_width.min()), float(df.petal_width.max()))
+    data = {'sepal_length': sepal_length,
+            'sepal_width': sepal_width,
+            'petal_length': petal_length,
+            'petal_width': petal_width}
+    features = pd.DataFrame(data, index=[0])
+    return features
 
-num_points = st.slider("Number of points in spiral", 1, 10000, 1100)
-num_turns = st.slider("Number of turns in spiral", 1, 300, 31)
+input_df = user_input_features()
 
-indices = np.linspace(0, 1, num_points)
-theta = 2 * np.pi * num_turns * indices
-radius = indices
+# Main Panel
+st.write("""
+# Iris Flower Prediction App
+This app predicts the **Iris flower** type!
+""")
 
-x = radius * np.cos(theta)
-y = radius * np.sin(theta)
+# Display the user input features
+st.subheader('User Input parameters')
+st.write(input_df)
 
-df = pd.DataFrame({
-    "x": x,
-    "y": y,
-    "idx": indices,
-    "rand": np.random.randn(num_points),
-})
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-st.altair_chart(alt.Chart(df, height=700, width=700)
-    .mark_point(filled=True)
-    .encode(
-        x=alt.X("x", axis=None),
-        y=alt.Y("y", axis=None),
-        color=alt.Color("idx", legend=None, scale=alt.Scale()),
-        size=alt.Size("rand", legend=None, scale=alt.Scale(range=[1, 150])),
-    ))
+# Model Training and Evaluation
+logreg = LogisticRegression(max_iter=200)
+logreg.fit(X_train, y_train)
+y_pred = logreg.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+report = classification_report(y_test, y_pred, target_names=iris.target_names)
+
+st.subheader('Model Evaluation')
+st.write('Accuracy: ', accuracy)
+st.text('Classification Report:')
+st.text(report)
+
+# Optimizing Model using Grid Search
+param_grid = {'C': [0.1, 1, 10, 100]}
+grid = GridSearchCV(LogisticRegression(max_iter=200), param_grid, refit=True, verbose=0)
+grid.fit(X_train, y_train)
+
+st.subheader('Grid Search Results')
+st.write('Best Parameters: ', grid.best_params_)
+st.write('Best Estimator: ', grid.best_estimator_)
+
+# Predicting on user input
+prediction = grid.predict(input_df)
+prediction_proba = grid.predict_proba(input_df)
+
+st.subheader('Prediction')
+st.write(iris.target_names[prediction])
+
+st.subheader('Prediction Probability')
+st.write(prediction_proba)
