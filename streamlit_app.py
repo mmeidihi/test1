@@ -1,79 +1,54 @@
 import streamlit as st
-import pandas as pd
-import seaborn as sns
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.utils import to_categorical
 
-# Load dataset
-iris = load_iris()
-X = iris.data
-y = iris.target
-df = pd.DataFrame(X, columns=iris.feature_names)
-df['target'] = y
+# Load and preprocess data
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+X_train = X_train.reshape(-1, 28, 28, 1).astype('float32') / 255
+X_test = X_test.reshape(-1, 28, 28, 1).astype('float32') / 255
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
 
-# Display column names for debugging
-st.write(df.columns)
+# Build the model
+model = Sequential([
+    Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(28, 28, 1)),
+    MaxPooling2D(pool_size=(2, 2)),
+    Conv2D(64, kernel_size=(3, 3), activation='relu'),
+    MaxPooling2D(pool_size=(2, 2)),
+    Flatten(),
+    Dense(128, activation='relu'),
+    Dense(10, activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=5, batch_size=200)
 
 # Sidebar for user input
 st.sidebar.header('User Input Parameters')
-
-def user_input_features():
-    sepal_length = st.sidebar.slider('Sepal length', float(df['sepal length (cm)'].min()), float(df['sepal length (cm)'].max()))
-    sepal_width = st.sidebar.slider('Sepal width', float(df['sepal width (cm)'].min()), float(df['sepal width (cm)'].max()))
-    petal_length = st.sidebar.slider('Petal length', float(df['petal length (cm)'].min()), float(df['petal length (cm)'].max()))
-    petal_width = st.sidebar.slider('Petal width', float(df['petal width (cm)'].min()), float(df['petal width (cm)'].max()))
-    data = {'sepal_length': sepal_length,
-            'sepal_width': sepal_width,
-            'petal_length': petal_length,
-            'petal_width': petal_width}
-    features = pd.DataFrame(data, index=[0])
-    return features
-
-input_df = user_input_features()
+index = st.sidebar.slider('Image index', 0, len(X_test) - 1, 0)
 
 # Main Panel
 st.write("""
-# Iris Flower Prediction App
-This app predicts the **Iris flower** type!
+# MNIST Digit Prediction App
+This app uses a CNN to predict the digit in an MNIST image.
 """)
 
-# Display the user input features
-st.subheader('User Input parameters')
-st.write(input_df)
+# Display the image
+st.subheader('Input Image')
+image = X_test[index].reshape(28, 28)
+plt.imshow(image, cmap='gray')
+plt.axis('off')
+st.pyplot(plt)
 
-# Split the data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-# Model Training and Evaluation
-logreg = LogisticRegression(max_iter=200)
-logreg.fit(X_train, y_train)
-y_pred = logreg.predict(X_test)
-
-accuracy = accuracy_score(y_test, y_pred)
-report = classification_report(y_test, y_pred, target_names=iris.target_names)
-
-st.subheader('Model Evaluation')
-st.write('Accuracy: ', accuracy)
-st.text('Classification Report:')
-st.text(report)
-
-# Optimizing Model using Grid Search
-param_grid = {'C': [0.1, 1, 10, 100]}
-grid = GridSearchCV(LogisticRegression(max_iter=200), param_grid, refit=True, verbose=0)
-grid.fit(X_train, y_train)
-
-st.subheader('Grid Search Results')
-st.write('Best Parameters: ', grid.best_params_)
-st.write('Best Estimator: ', grid.best_estimator_)
-
-# Predicting on user input
-prediction = grid.predict(input_df)
-prediction_proba = grid.predict_proba(input_df)
-
+# Predict the digit
 st.subheader('Prediction')
-st.write(iris.target_names[prediction])
+prediction = model.predict(X_test[index].reshape(1, 28, 28, 1))
+predicted_digit = np.argmax(prediction)
+st.write(f'Predicted Digit: {predicted_digit}')
 
-st.subheader('Prediction Probability')
-st.write(prediction_proba)
+st.subheader('Prediction Probabilities')
+st.write(prediction)
