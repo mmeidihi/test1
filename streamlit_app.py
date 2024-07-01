@@ -13,14 +13,17 @@ y = iris.target
 df = pd.DataFrame(X, columns=iris.feature_names)
 df['target'] = y
 
+# Display column names for debugging
+st.write(df.columns)
+
 # Sidebar for user input
 st.sidebar.header('User Input Parameters')
 
 def user_input_features():
-    sepal_length = st.sidebar.slider('Sepal length', float(df.sepal_length.min()), float(df.sepal_length.max()))
-    sepal_width = st.sidebar.slider('Sepal width', float(df.sepal_width.min()), float(df.sepal_width.max()))
-    petal_length = st.sidebar.slider('Petal length', float(df.petal_length.min()), float(df.petal_length.max()))
-    petal_width = st.sidebar.slider('Petal width', float(df.petal_width.min()), float(df.petal_width.max()))
+    sepal_length = st.sidebar.slider('Sepal length', float(df['sepal length (cm)'].min()), float(df['sepal length (cm)'].max()))
+    sepal_width = st.sidebar.slider('Sepal width', float(df['sepal width (cm)'].min()), float(df['sepal width (cm)'].max()))
+    petal_length = st.sidebar.slider('Petal length', float(df['petal length (cm)'].min()), float(df['petal length (cm)'].max()))
+    petal_width = st.sidebar.slider('Petal width', float(df['petal width (cm)'].min()), float(df['petal width (cm)'].max()))
     data = {'sepal_length': sepal_length,
             'sepal_width': sepal_width,
             'petal_length': petal_length,
