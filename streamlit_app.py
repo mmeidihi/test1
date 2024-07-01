@@ -34,6 +34,37 @@ def predict_edibility(cap_shape, cap_surface, cap_color, bruises, odor,
                       stalk_color_below_ring, veil_type, veil_color,
                       ring_number, ring_type, spore_print_color,
                       population, habitat):
+    """
+    Predicts the edibility of mushrooms based on user input.
+    
+    Parameters:
+    - cap_shape: Shape of the mushroom cap.
+    - cap_surface: Surface texture of the mushroom cap.
+    - cap_color: Color of the mushroom cap.
+    - bruises: Whether the mushroom has bruises.
+    - odor: Odor of the mushroom.
+    - gill_attachment: Attachment of gills to the stalk.
+    - gill_spacing: Spacing of gills.
+    - gill_size: Size of gills.
+    - gill_color: Color of gills.
+    - stalk_shape: Shape of the stalk.
+    - stalk_root: Root type of the stalk.
+    - stalk_surface_above_ring: Surface texture of the stalk above the ring.
+    - stalk_surface_below_ring: Surface texture of the stalk below the ring.
+    - stalk_color_above_ring: Color of the stalk above the ring.
+    - stalk_color_below_ring: Color of the stalk below the ring.
+    - veil_type: Type of veil covering the mushroom.
+    - veil_color: Color of the veil.
+    - ring_number: Number of rings on the stalk.
+    - ring_type: Type of ring on the stalk.
+    - spore_print_color: Color of the spore print.
+    - population: Population density of mushrooms.
+    - habitat: Habitat where the mushroom is found.
+    
+    Returns:
+    - prediction: Predicted class label (0 for edible, 1 for poisonous).
+    - probability: Probability of the predicted class.
+    """
     input_data = pd.DataFrame([[cap_shape, cap_surface, cap_color, bruises, odor,
                                 gill_attachment, gill_spacing, gill_size, gill_color,
                                 stalk_shape, stalk_root, stalk_surface_above_ring,
@@ -71,25 +102,55 @@ spore_print_color = st.sidebar.selectbox('Spore Print Color', df['spore-print-co
 population = st.sidebar.selectbox('Population', df['population'].unique())
 habitat = st.sidebar.selectbox('Habitat', df['habitat'].unique())
 
+# Function to validate inputs are letters 'a' to 'z'
+def validate_letter_input(input_value):
+    if input_value.isalpha():
+        return input_value.lower()
+    else:
+        st.warning('Please enter alphabetic characters only.')
+        return ''
+
+# Convert inputs to lowercase alphabetic characters
+cap_shape = validate_letter_input(cap_shape)
+cap_surface = validate_letter_input(cap_surface)
+cap_color = validate_letter_input(cap_color)
+odor = validate_letter_input(odor)
+gill_color = validate_letter_input(gill_color)
+stalk_shape = validate_letter_input(stalk_shape)
+stalk_root = validate_letter_input(stalk_root)
+veil_color = validate_letter_input(veil_color)
+ring_type = validate_letter_input(ring_type)
+spore_print_color = validate_letter_input(spore_print_color)
+habitat = validate_letter_input(habitat)
+
 # Main panel
-st.write("""
-# Mushroom Edibility Prediction App
+st.title("Mushroom Edibility Prediction App")
+st.markdown("""
 This app predicts the **edibility** of mushrooms based on various characteristics.
 """)
-prediction, probability = predict_edibility(cap_shape, cap_surface, cap_color, bruises, odor,
-                                            gill_attachment, gill_spacing, gill_size, gill_color,
-                                            stalk_shape, stalk_root, stalk_surface_above_ring,
-                                            stalk_surface_below_ring, stalk_color_above_ring,
-                                            stalk_color_below_ring, veil_type, veil_color,
-                                            ring_number, ring_type, spore_print_color,
-                                            population, habitat)
 
-# Display prediction
-st.subheader('Prediction')
-edibility = 'Poisonous' if prediction[0] == 1 else 'Edible'
-st.write(f"Based on the provided information, the mushroom is predicted to be **{edibility}**.")
+# Predict button for user input
+if st.sidebar.button('Predict'):
+    prediction, probability = predict_edibility(cap_shape, cap_surface, cap_color, bruises, odor,
+                                                gill_attachment, gill_spacing, gill_size, gill_color,
+                                                stalk_shape, stalk_root, stalk_surface_above_ring,
+                                                stalk_surface_below_ring, stalk_color_above_ring,
+                                                stalk_color_below_ring, veil_type, veil_color,
+                                                ring_number, ring_type, spore_print_color,
+                                                population, habitat)
 
-# Display prediction probabilities
-st.subheader('Prediction Probabilities')
-st.write(f"Probability of Edible: {probability[0][0]:.2f}")
-st.write(f"Probability of Poisonous: {probability[0][1]:.2f}")
+    # Display prediction
+    st.subheader('Prediction')
+    edibility = 'Poisonous' if prediction[0] == 1 else 'Edible'
+    st.write(f"Based on the provided information, the mushroom is predicted to be **{edibility}**.")
+
+    # Display prediction probabilities
+    st.subheader('Prediction Probabilities')
+    st.write(f"Probability of Edible: {probability[0][0]:.2f}")
+    st.write(f"Probability of Poisonous: {probability[0][1]:.2f}")
+
+# Footer
+st.markdown("""
+---
+App developed by [Your Name]
+""")
