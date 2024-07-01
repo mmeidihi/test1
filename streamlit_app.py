@@ -1,31 +1,32 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from tensorflow.keras.datasets import mnist
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.utils import to_categorical
+from sklearn import datasets
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import classification_report, accuracy_score
 
 # Load and preprocess data
-(X_train, y_train), (X_test, y_test) = mnist.load_data()
-X_train = X_train.reshape(-1, 28, 28, 1).astype('float32') / 255
-X_test = X_test.reshape(-1, 28, 28, 1).astype('float32') / 255
-y_train = to_categorical(y_train, 10)
-y_test = to_categorical(y_test, 10)
+digits = datasets.load_digits()
+X = digits.images
+y = digits.target
+
+# Flatten the images for the classifier
+n_samples = len(X)
+X = X.reshape((n_samples, -1))
+
+# Split into train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=42)
+
+# Standardize the data
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
 
 # Build the model
-model = Sequential([
-    Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(28, 28, 1)),
-    MaxPooling2D(pool_size=(2, 2)),
-    Conv2D(64, kernel_size=(3, 3), activation='relu'),
-    MaxPooling2D(pool_size=(2, 2)),
-    Flatten(),
-    Dense(128, activation='relu'),
-    Dense(10, activation='softmax')
-])
-
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=5, batch_size=200)
+model = MLPClassifier(hidden_layer_sizes=(64, 64), max_iter=300, random_state=42)
+model.fit(X_train, y_train)
 
 # Sidebar for user input
 st.sidebar.header('User Input Parameters')
@@ -33,22 +34,24 @@ index = st.sidebar.slider('Image index', 0, len(X_test) - 1, 0)
 
 # Main Panel
 st.write("""
-# MNIST Digit Prediction App
-This app uses a CNN to predict the digit in an MNIST image.
+# Digits Prediction App
+This app uses a Neural Network to predict the digit in a given image.
 """)
 
 # Display the image
 st.subheader('Input Image')
-image = X_test[index].reshape(28, 28)
+image = X_test[index].reshape(8, 8)
 plt.imshow(image, cmap='gray')
 plt.axis('off')
 st.pyplot(plt)
 
 # Predict the digit
 st.subheader('Prediction')
-prediction = model.predict(X_test[index].reshape(1, 28, 28, 1))
-predicted_digit = np.argmax(prediction)
+prediction = model.predict([X_test[index]])
+predicted_digit = prediction[0]
 st.write(f'Predicted Digit: {predicted_digit}')
 
+# Display prediction probabilities
 st.subheader('Prediction Probabilities')
-st.write(prediction)
+probabilities = model.predict_proba([X_test[index]])
+st.write(probabilities)
